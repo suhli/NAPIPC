@@ -14,9 +14,9 @@ build:
 run:
 ```bash
     node test/sender.js
-    //sending!
-    //send success,result:e hello world!
+    #sending!
+    #send success,result:e hello world!
     node test/listener.js
-    //listening channel:test1
-    //receive:e hello world!
+    #listening channel:test1
+    #receive:e hello world!
 ```
