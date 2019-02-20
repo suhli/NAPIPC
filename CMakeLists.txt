@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.12)
+project(NAPIpc)
+set(CMAKE_CXX_STANDARD 14)
+include_directories(node_modules/node-addon-api)
+include_directories(node_modules/node-addon-api/src)
+file(GLOB SOURCE_FILES "src/*.cc" "src/*.cpp" "src/*.h")
+add_executable(NAPIpc src/nipc.cpp src/nipc.h)
