@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <cassert>
 #include "NChar.h"
-
+#include "ipc_struct.h"
 #define CHECK_NAPI_RESULT(condition) (assert((condition) == napi_ok))
 #define CharToNs(to, from, env)                                                             \
   napi_value to ## VAL;                                                                     \
@@ -17,6 +17,12 @@
   }                                                                                         \
   napi_value to(to ## VAL)
 
+#define VoidToNBuf(to, size, data, env)                                                             \
+  napi_value to ## VAL;                                                                     \
+  {                                                                                         \
+   CHECK_NAPI_RESULT(napi_create_buffer(env,size,data,&to ## VAL));        \
+  }                                                                                         \
+  napi_value to(to ## VAL)
 
 #define NsToChar(to, from, name)                                                            \
   size_t to ## Sz_;                                                                         \
