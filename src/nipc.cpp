@@ -10,7 +10,7 @@ namespace NIPC{
     }
 
     int get_shared_memory(const char *key_str, size_t size,int flg) {
-        key_t key = ftok(key_str, 24);
+        key_t key = ftok(key_str, 65);
         return shmget(key, size, flg);
     }
 
@@ -21,7 +21,7 @@ namespace NIPC{
         return packet;
     }
 
-    napi_value write_to_memory(int id, IPCPacket *packet,size_t size,napi_env env) {
+    napi_value write_to_memory(int id, IPCPacket *packet,napi_env env) {
         auto *shared = static_cast<IPCPacket *>(shmat(id, nullptr, 0));
         if (shared == (void *) -1) {
             shmdt(shared);
@@ -32,10 +32,12 @@ namespace NIPC{
         strncpy(shared->content,packet->content,packet->content_len);
         CharToNs(result,shared->content,env);
         shmdt(shared);
+        delete packet;
         return result;
     }
 
     napi_value read_from_memory(napi_env env, char *channel) {
+
         int id = get_shared_memory(channel, 0,0);
         void *buf = shmat(id, nullptr, SHM_RDONLY);
         if(buf == (void *) -1){
@@ -60,7 +62,7 @@ namespace NIPC{
         IPCPacket *packet = pack(value);
         size_t packet_size = sizeof(*packet);
         int id = get_shared_memory(channel.getData(), packet_size,IPC_CREAT | 0666);
-        return write_to_memory(id, packet,packet_size,env);
+        return write_to_memory(id, packet,env);
     }
 
     napi_value read(napi_env env, napi_callback_info info) {
