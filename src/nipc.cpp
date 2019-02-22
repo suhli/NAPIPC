@@ -45,7 +45,7 @@ namespace NIPC{
             shmctl(id, IPC_RMID, nullptr);
             return nullptr;
         }
-        auto *packet = reinterpret_cast<IPCPacket*>(buf);
+        auto *packet = (IPCPacket*) buf;
         CharToNs(result,packet->content,env);
         shmdt(buf);
         shmctl(id, IPC_RMID, nullptr);
