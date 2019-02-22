@@ -23,9 +23,22 @@ module.exports.send = function (channel, msg) {
     return ipc.send(channel,msg);
 };
 
-process.on("exit",()=>{
+
+function rmTmpFile(){
     for(let channel of channels){
-        fs.unlink(channel);
+        fs.unlinkSync(channel);
     }
+    channels.clear();
+}
+
+process.on("SIGINT",()=>{
+    rmTmpFile();
 });
 
+process.on("SIGUSR1",()=>{
+    rmTmpFile();
+});
+
+process.on("SIGTERM",()=>{
+    rmTmpFile();
+});
