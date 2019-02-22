@@ -4,12 +4,21 @@ if(!fs.existsSync("tmp")){
     fs.mkdirSync("tmp");
 }
 const channels = new Set();
+const existPaths = new Set();
+function initPath(path){
+    if(existPaths.has(path)){
+        return;
+    }
+    if(!fs.existsSync(path)){
+        fs.closeSync(fs.openSync(path, 'wx'));
+        existPaths.add(path);
+    }
+}
+
 module.exports.listen = function (channel,period = 300,cb) {
     channel = `${process.env.PWD}/tmp/${channel}`;
     channels.add(channel);
-    if(!fs.existsSync(channel)){
-        fs.closeSync(fs.openSync(channel, 'wx'));
-    }
+    initPath(channel);
     setInterval(()=>{
         let message = ipc.read(channel);
         if(message){
@@ -20,6 +29,7 @@ module.exports.listen = function (channel,period = 300,cb) {
 
 module.exports.send = function (channel, msg) {
     channel = `${process.env.PWD}/tmp/${channel}`;
+    initPath(channel);
     return ipc.send(channel,msg);
 };
 
