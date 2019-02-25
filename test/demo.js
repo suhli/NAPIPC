@@ -7,7 +7,10 @@ if(cluster.isMaster){
 
     ping_cluster.on("online",()=>{
         function ping(){
-           ipc.send(`${channel}_ping`,"ping");
+            ipc.sendAsync(`${channel}_ping`,"ping",(status,result)=>{
+                console.log(`async status:${status},result:${result}`);
+            });
+           // ipc.send(`${channel}_ping`,"ping");
         }
         ipc.listen(`${channel}_pong`,300,(msg)=>{
             if(msg === "pong"){

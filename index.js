@@ -33,6 +33,12 @@ module.exports.send = function (channel, msg) {
     return ipc.send(channel,msg);
 };
 
+module.exports.sendAsync = function (channel, msg,callback) {
+    channel = `${process.env.PWD}/tmp/${channel}`;
+    initPath(channel);
+    return ipc.send_async(channel,msg,callback);
+};
+
 
 function rmTmpFile(){
     for(let channel of channels){
