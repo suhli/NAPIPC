@@ -31,7 +31,7 @@ namespace NIPC{
         shared->content_len = packet->content_len;
         strncpy(shared->content,packet->content,packet->content_len);
         shmdt(shared);
-        delete packet;
+        free(packet);
         return shared->content;
     }
 
@@ -55,7 +55,8 @@ namespace NIPC{
         IPCPacket *packet = pack(info->value);
         size_t packet_size = sizeof(*packet);
         int id = get_shared_memory(info->channel.getData(), packet_size,IPC_CREAT | 0666);
-        return write_to_memory(id, packet,env);
+        write_to_memory(id, packet,env);
+        return info->value.getData();
     }
 
     void send_async_in_work(napi_env env,void* data){
@@ -73,7 +74,8 @@ namespace NIPC{
         auto send_info = (SendInfo *) malloc(sizeof(SendInfo) + sizeof(value) + sizeof(channel));
         send_info->value = value;
         send_info->channel = channel;
-        CharToNs(result,send_by_info(env,send_info),env);
+        char *send_result = send_by_info(env,send_info);
+        CharToNs(result,send_result,env);
         free(send_info);
         return result;
     }
