@@ -7,8 +7,14 @@
 #include <sys/shm.h>
 #include <cstdio>
 #include <cassert>
-#include "ipc_struct.h"
+#include "struct.h"
 #define CHECK_NAPI_RESULT(condition) (assert((condition) == napi_ok))
+
+typedef napi_value NapiValue;
+typedef napi_ref NapiRef;
+typedef napi_async_work NapiAsyncWork;
+typedef size_t sizeT;
+
 #define CharToNs(to, from, env)                                                             \
   napi_value to ## VAL;                                                                     \
   {                                                                                         \

@@ -14,7 +14,7 @@ namespace NIPC {
         size_t size_;
     };
 
-    class SendInfo {
+    class SendRequest {
     public:
         std::string getChannel() {
             return channel;
@@ -24,7 +24,7 @@ namespace NIPC {
             return value;
         }
 
-        SendInfo(std::string channel, std::string value) : channel(channel), value(value) {};
+        SendRequest(std::string channel, std::string value) : channel(channel), value(value) {};
     private:
         std::string channel;
         std::string value;
@@ -57,7 +57,7 @@ namespace NIPC {
 
     class AsyncWorker {
     public:
-        SendInfo getInfo() {
+        SendRequest getInfo() {
             return info;
         };
 
@@ -77,9 +77,9 @@ namespace NIPC {
             worker = w;
         };
 
-        AsyncWorker(SendInfo info) : info(info) {};
+        AsyncWorker(SendRequest info) : info(info) {};
     private:
-        SendInfo info;
+        SendRequest info;
         napi_ref cb;
         napi_async_work worker;
     };
