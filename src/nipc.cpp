@@ -15,7 +15,7 @@ namespace NIPC{
     }
 
     IPCPacket pack(std::string value){
-        return IPCPacket(sizeof(value),value);
+        return IPCPacket(value.size(),value);
     }
 
     void write_to_memory(int id, IPCPacket packet) {
