@@ -15,7 +15,7 @@ function initPath(path){
     }
 }
 
-module.exports.listen = function (channel,period = 300,cb) {
+module.exports.listen = function (channel,cb,period = 300) {
     channel = `${process.env.PWD}/tmp/${channel}`;
     channels.add(channel);
     initPath(channel);

@@ -12,10 +12,10 @@ if(cluster.isMaster){
             });
            // ipc.send(`${channel}_ping`,"ping");
         }
-        ipc.listen(`${channel}_pong`,300,(msg)=>{
+        ipc.listen(`${channel}_pong`,(msg)=>{
             console.log(`ping receive:${msg}`);
             ping();
-        });
+        },300);
         ping();
     });
 
@@ -23,10 +23,10 @@ if(cluster.isMaster){
         function pong(){
             ipc.send(`${channel}_pong`,"pong🤣");
         }
-        ipc.listen(`${channel}_ping`,300,(msg)=>{
+        ipc.listen(`${channel}_ping`,(msg)=>{
             console.log(`pong receive:${msg}`);
             pong();
-        });
+        },300);
     });
 }
 
