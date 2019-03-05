@@ -3,8 +3,7 @@
         {
             "target_name": "nipc",
             "sources": [
-                "src/nipc.cpp",
-                "src/NChar.cpp"
+                "src/nipc.cpp"
             ],
             "include_dirs" : [
  	 			 "<!@(node -p \"require('node-addon-api').include\")"

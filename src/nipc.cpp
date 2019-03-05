@@ -14,29 +14,23 @@ namespace NIPC{
         return shmget(key, size, flg);
     }
 
-    IPCPacket *pack(NChar value){
-        auto *packet = static_cast<IPCPacket *>(malloc(sizeof(IPCPacket) + value.getSize()));
-        packet->content_len = value.getSize();
-        strncpy(packet->content,value.getData(),value.getSize());
-        return packet;
+    IPCPacket pack(std::string value){
+        return IPCPacket(sizeof(value),value);
     }
 
-    char* write_to_memory(int id, IPCPacket *packet,napi_env env) {
+    void write_to_memory(int id, IPCPacket packet) {
         auto *shared = static_cast<IPCPacket *>(shmat(id, nullptr, 0));
         if (shared == (void *) -1) {
             shmdt(shared);
             shmctl(id, IPC_RMID, nullptr);
-            return nullptr;
+            return;
         }
-        shared->content_len = packet->content_len;
-        strncpy(shared->content,packet->content,packet->content_len);
+        shared->setSize(packet.getSize());
+        shared->setContent(std::string(packet.getContent()));
         shmdt(shared);
-        free(packet);
-        return shared->content;
     }
 
     napi_value read_from_memory(napi_env env, char *channel) {
-
         int id = get_shared_memory(channel, 0,0);
         void *buf = shmat(id, nullptr, SHM_RDONLY);
         if(buf == (void *) -1){
@@ -45,23 +39,23 @@ namespace NIPC{
             return nullptr;
         }
         auto *packet = (IPCPacket*) buf;
-        CharToNs(result,packet->content,env);
+        CharToNs(result,packet->getContent().c_str(),env);
         shmdt(buf);
         shmctl(id, IPC_RMID, nullptr);
         return result;
     }
 
-    char* send_by_info(napi_env env,SendInfo *info){
-        IPCPacket *packet = pack(info->value);
-        size_t packet_size = sizeof(*packet);
-        int id = get_shared_memory(info->channel.getData(), packet_size,IPC_CREAT | 0666);
-        write_to_memory(id, packet,env);
-        return info->value.getData();
+    const char* send_by_info(SendInfo info){
+        IPCPacket packet = pack(info.getValue());
+        size_t packet_size = sizeof(packet);
+        int id = get_shared_memory(info.getChannel().c_str(), packet_size,IPC_CREAT | 0666);
+        write_to_memory(id, packet);
+        return info.getValue().c_str();
     }
 
     void send_async_in_work(napi_env env,void* data){
         auto *worker = (AsyncWorker*) data;
-        send_by_info(env,worker->info);
+        send_by_info(worker->getInfo());
     }
 
     napi_value send(napi_env env, napi_callback_info info) {
@@ -71,32 +65,28 @@ namespace NIPC{
         napi_value channel_n = argv[0], value_n = argv[1];
         NsToChar(channel, channel_n, channel);
         NsToChar(value, value_n, value);
-        auto send_info = (SendInfo *) malloc(sizeof(SendInfo) + sizeof(value) + sizeof(channel));
-        send_info->value = value;
-        send_info->channel = channel;
-        char *send_result = send_by_info(env,send_info);
+        SendInfo sendInfo(std::string(channel.getData()),std::string(value.getData()));
+        const char *send_result = send_by_info(sendInfo);
         CharToNs(result,send_result,env);
-        free(send_info);
         return result;
     }
 
     void complete_async(napi_env env,
                         napi_status status,
                         void *data){
-        auto *worker = (AsyncWorker*) data;
+        auto *worker = static_cast<AsyncWorker *>(data);
         CHECK_NAPI_RESULT(status);
         napi_value global;
         napi_get_global(env,&global);
         napi_value callback;
-        napi_get_reference_value(env,worker->cb,&callback);
+        napi_get_reference_value(env,worker->getCb(),&callback);
         CharToNs(cb_status,"success",env);
-        CharToNs(result,worker->info->value.getData(),env);
+        CharToNs(result,worker->getInfo().getValue().c_str(),env);
         napi_value _args[] = {cb_status,result};
         napi_value call_result;
         CHECK_NAPI_RESULT(napi_call_function(env,global,callback,2,_args,&call_result));
-        CHECK_NAPI_RESULT(napi_delete_reference(env,worker->cb));
-        free(worker->info);
-        free(worker);
+        CHECK_NAPI_RESULT(napi_delete_reference(env,worker->getCb()));
+        delete worker;
     }
 
 
@@ -107,14 +97,13 @@ namespace NIPC{
         napi_value channel_n = argv[0], value_n = argv[1],cb = argv[2];
         NsToChar(channel, channel_n, channel);
         NsToChar(value, value_n, value);
-        auto send_info = (SendInfo *) malloc(sizeof(SendInfo) + sizeof(value) + sizeof(channel));
-        send_info->value = value;
-        send_info->channel = channel;
+        SendInfo send_info(std::string(channel.getData()),std::string(value.getData()));
         CharToNs(status,"pending",env);
         CharToNs(type,"NAPIPC",env);
-        auto worker = (AsyncWorker*)malloc(sizeof(AsyncWorker));
-        worker->info = send_info;
-        CHECK_NAPI_RESULT(napi_create_reference(env,cb,1,&worker->cb));
+        AsyncWorker *worker = new AsyncWorker(send_info);
+        napi_ref cb_ref;
+        CHECK_NAPI_RESULT(napi_create_reference(env,cb,1,&cb_ref));
+        napi_async_work async_work;
         CHECK_NAPI_RESULT(napi_create_async_work(
                 env,
                 status,
@@ -122,11 +111,13 @@ namespace NIPC{
                 send_async_in_work,
                 complete_async,
                 worker,
-                &worker->worker
+                &async_work
         ));
+        worker->setCb(cb_ref);
+        worker->setWorker(async_work);
         napi_value n_null;
         CHECK_NAPI_RESULT(napi_get_null(env,&n_null));
-        CHECK_NAPI_RESULT(napi_queue_async_work(env,worker->worker));
+        CHECK_NAPI_RESULT(napi_queue_async_work(env,worker->getWorker()));
         return n_null;
     }
 

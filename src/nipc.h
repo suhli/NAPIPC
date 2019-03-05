@@ -7,7 +7,6 @@
 #include <sys/shm.h>
 #include <cstdio>
 #include <cassert>
-#include "NChar.h"
 #include "ipc_struct.h"
 #define CHECK_NAPI_RESULT(condition) (assert((condition) == napi_ok))
 #define CharToNs(to, from, env)                                                             \
@@ -49,7 +48,7 @@
         size_t sz;                                                                          \
         CHECK_NAPI_RESULT(napi_get_value_string_utf8(env, to ## Str_, nullptr, 0, &sz));    \
         to ## Sz_ = sz;                                                                     \
-        to ## Ch_ = new char[to ## Sz_+1];                                                  \
+        to ## Ch_ = new char[to ## Sz_+1];                                                      \
         size_t unused;                                                                      \
         CHECK_NAPI_RESULT(                                                                  \
           napi_get_value_string_utf8(env, to ## Str_, to ## Ch_, to ## Sz_+1, &unused));    \
