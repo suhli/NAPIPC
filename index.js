@@ -39,6 +39,10 @@ module.exports.sendAsync = function (channel, msg,callback) {
     return ipc.send_async(channel,msg,callback);
 };
 
+module.exports.clearChannel = function (channel) {
+    channel = `${process.env.PWD}/tmp/${channel}`;
+    return ipc.clear_channel(channel);
+};
 
 function rmTmpFile(){
     for(let channel of channels){
@@ -48,13 +52,13 @@ function rmTmpFile(){
 }
 
 process.on("SIGINT",()=>{
-    rmTmpFile();
+    process.nextTick(rmTmpFile)
 });
 
 process.on("SIGUSR1",()=>{
-    rmTmpFile();
+    process.nextTick(rmTmpFile)
 });
 
 process.on("SIGTERM",()=>{
-    rmTmpFile();
+    process.nextTick(rmTmpFile)
 });

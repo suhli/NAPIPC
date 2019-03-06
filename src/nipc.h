@@ -4,7 +4,7 @@
 #include <sys/shm.h>
 #include <cstdio>
 #include <cassert>
-#include "struct/AsyncWorker.h"
+#include "struct/AsyncWorker.cpp"
 #include "struct/IPCPacket.h"
 #include "struct/SendRequest.h"
 

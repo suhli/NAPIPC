@@ -28,5 +28,23 @@ if(cluster.isMaster){
             pong();
         },300);
     });
+
+    function clear(){
+        ipc.clearChannel(`${channel}_ping`);
+        ipc.clearChannel(`${channel}_pong`);
+    }
+
+    process.on("SIGINT",()=>{
+        clear();
+    });
+
+    process.on("SIGUSR1",()=>{
+        clear();
+    });
+
+    process.on("SIGTERM",()=>{
+        clear();
+    });
+
 }
 

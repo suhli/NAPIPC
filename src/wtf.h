@@ -1,8 +1,14 @@
-#include <node_api.h>
+
+#ifndef WTF_H
+#define WTF_H
 #include "struct/NChar.h"
+#include <node_api.h>
 typedef  napi_value NapiValue;
 typedef  napi_ref NapiRef;
 typedef  napi_async_work NapiAsyncWork;
+typedef  napi_env NapiEnv;
+typedef  napi_callback_info NapiCbInfo;
+typedef  napi_status NapiStatus;
 
 #define CHECK_NAPI_RESULT(condition) (assert((condition) == napi_ok))
 
@@ -12,6 +18,13 @@ typedef  napi_async_work NapiAsyncWork;
    CHECK_NAPI_RESULT(napi_create_string_utf8(env,from,NAPI_AUTO_LENGTH,&to ## VAL));        \
   }                                                                                         \
   napi_value to(to ## VAL)
+
+#define CreateNReference(to, from, env)                                                     \
+  NapiRef to ## VAL;                                                                        \
+  {                                                                                         \
+   CHECK_NAPI_RESULT(napi_create_reference(env, from, 1, &to ## VAL));                      \
+  }                                                                                         \
+  NapiRef to(to ## VAL)
 
 #define NsToChar(to, from, name)                                                            \
   size_t to ## Sz_;                                                                         \
@@ -46,6 +59,8 @@ typedef  napi_async_work NapiAsyncWork;
     }                                                                                       \
   }                                                                                         \
   NIPC::NChar to(to ## Ch_,to ## Sz_)
+
+#endif
 
 
 

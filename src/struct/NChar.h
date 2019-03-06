@@ -1,4 +1,3 @@
-
 namespace NIPC {
     class NChar {
     public:

@@ -1,38 +1,36 @@
 #include <string>
 #include <node_api.h>
+#include "../wtf.h"
+typedef  void (*AsyncWorkExecuteCallback)(NapiEnv,void*);
+template<class T>
+using AsyncWorkCompleteCallback = void (*)(NapiEnv,NapiStatus,T*,NapiValue);
 namespace NIPC {
 
     template <class T>
     class AsyncWorker {
     public:
-        void * getData() {
-            return data;
-        };
-
-        napi_ref getCb() {
-            return cb;
-        };
-
-        napi_async_work getWorker() {
-            return worker;
-        };
-
-        void setCb(napi_ref c) {
-            cb = c;
-        };
-
-        void setWorker(napi_async_work w) {
-            worker = w;
-        };
-
-        AsyncWorker(T *data) : data(data) {};
+        AsyncWorker(T *data,AsyncWorkExecuteCallback execute,AsyncWorkCompleteCallback<T> complete,NapiRef cb) : data(data),execute(execute),complete(complete),cb(cb) {};
         ~AsyncWorker(){
             delete data;
         }
+        static NapiValue boot(NapiEnv env,AsyncWorker<T> *worker);
+//        AsyncWorkExecuteCallback getExecute(){
+//            return execute;
+//        };
+//        AsyncWorkCompleteCallback<T> getComplete(){
+//            return complete;
+//        };
+        T *getData(){
+            return data;
+        };
+        static void onExecute(NapiEnv env,void *data);
+        static void onComplete(NapiEnv env,NapiStatus status,void *data);
     private:
         T *data;
-        napi_ref cb;
-        napi_async_work worker;
+        AsyncWorkExecuteCallback execute;
+        AsyncWorkCompleteCallback<T> complete;
+        NapiRef cb;
+        NapiAsyncWork work;
     };
 }
 
