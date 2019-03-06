@@ -1,6 +1,5 @@
-
-#include <cstring>
 #include "nipc.h"
+#include "wtf.h"
 namespace NIPC{
     NapiValue createNError(napi_env env, const char *str) {
         CharToNs(result,str,env);
@@ -9,7 +8,7 @@ namespace NIPC{
         return result;
     }
 
-    int getSharedMemory(const char *key_str, sizeT size,int flg) {
+    int getSharedMemory(const char *key_str, size_t size,int flg) {
         key_t key = ftok(key_str, 65);
         return shmget(key, size, flg);
     }
@@ -45,43 +44,44 @@ namespace NIPC{
         return result;
     }
 
-    const char* sendRequest(SendRequest info){
-        IPCPacket packet = pack(info.getValue());
-        sizeT packet_size = sizeof(packet);
-        int id = getSharedMemory(info.getChannel().c_str(), packet_size,IPC_CREAT | 0666);
+    void sendRequest(void *data){
+        auto *request = static_cast<SendRequest *>(data);
+        IPCPacket packet = pack(request->getValue());
+        size_t packet_size = sizeof(packet);
+        int id = getSharedMemory(request->getChannel().c_str(), packet_size,IPC_CREAT | 0666);
         writeSharedMemory(id, packet);
-        return info.getValue().c_str();
     }
 
     void sendAsyncInWork(napi_env env,void* data){
-        auto *worker = (AsyncWorker*) data;
-        sendRequest(worker->getInfo());
+        auto *worker = (AsyncWorker<SendRequest>*) data;
+        sendRequest(worker->getData());
     }
 
     NapiValue send(napi_env env, napi_callback_info info) {
-        sizeT argc = 2;
+        size_t argc = 2;
         NapiValue argv[argc];
         CHECK_NAPI_RESULT(napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
         NapiValue channel_n = argv[0], value_n = argv[1];
         NsToChar(channel, channel_n, channel);
         NsToChar(value, value_n, value);
         SendRequest sendInfo(std::string(channel.getData()),std::string(value.getData()));
-        const char *send_result = sendRequest(sendInfo);
-        CharToNs(result,send_result,env);
+        sendRequest(&sendInfo);
+        CharToNs(result,value.getData(),env);
         return result;
     }
 
     void completeAsync(napi_env env,
                         napi_status status,
                         void *data){
-        auto *worker = static_cast<AsyncWorker *>(data);
+        auto *worker = static_cast<AsyncWorker<SendRequest> *>(data);
         CHECK_NAPI_RESULT(status);
         NapiValue global;
         napi_get_global(env,&global);
         NapiValue callback;
         napi_get_reference_value(env,worker->getCb(),&callback);
         CharToNs(cb_status,"success",env);
-        CharToNs(result,worker->getInfo().getValue().c_str(),env);
+        auto *request = static_cast< SendRequest *>(worker->getData());
+        CharToNs(result,request->getValue().c_str(),env);
         NapiValue _args[] = {cb_status,result};
         NapiValue call_result;
         CHECK_NAPI_RESULT(napi_call_function(env,global,callback,2,_args,&call_result));
@@ -91,16 +91,16 @@ namespace NIPC{
 
 
     NapiValue sendAsync(napi_env env, napi_callback_info info){
-        sizeT argc = 3;
+        size_t argc = 3;
         NapiValue argv[argc];
         CHECK_NAPI_RESULT(napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
         NapiValue channel_n = argv[0], value_n = argv[1],cb = argv[2];
         NsToChar(channel, channel_n, channel);
         NsToChar(value, value_n, value);
-        SendRequest send_info(std::string(channel.getData()),std::string(value.getData()));
+        auto *req = new SendRequest(std::string(channel.getData()),std::string(value.getData()));
         CharToNs(status,"pending",env);
         CharToNs(type,"NAPIPC",env);
-        AsyncWorker *worker = new AsyncWorker(send_info);
+        auto *worker = new AsyncWorker<SendRequest>(req);
         NapiRef cb_ref;
         CHECK_NAPI_RESULT(napi_create_reference(env,cb,1,&cb_ref));
         NapiAsyncWork async_work;
@@ -122,7 +122,7 @@ namespace NIPC{
     }
 
     NapiValue read(napi_env env, napi_callback_info info) {
-        sizeT argc = 1;
+        size_t argc = 1;
         NapiValue argv[1];
         CHECK_NAPI_RESULT(napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
         NapiValue channel_n = argv[0];
