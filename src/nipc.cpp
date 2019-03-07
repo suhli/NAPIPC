@@ -36,7 +36,7 @@ namespace NIPC {
             shmctl(id, IPC_RMID, nullptr);
             return nullptr;
         }
-        auto *packet = (IPCPacket *) buf;
+        auto *packet = static_cast<IPCPacket *>(buf);
         CharToNs(result, packet->getContent().c_str(), env);
         shmdt(buf);
         shmctl(id, IPC_RMID, nullptr);
@@ -52,7 +52,7 @@ namespace NIPC {
     }
 
     void sendAsyncInWork(NapiEnv env, void *data) {
-        auto *req = (SendRequest *) data;
+        auto *req = static_cast<SendRequest *>(data);
         sendRequest(req);
     }
 
